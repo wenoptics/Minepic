@@ -51,36 +51,29 @@ class Minepic {
 		$skin_img2 = $skin_img;
 		$canvas = imagecreatetruecolor($size, $size);
 		imagecopyresampled($canvas, $skin_img, 0, 0, 8, 8, $size, $size, 8, 8);
-		if ($only_save == 1) {
-		    imagepng($canvas, './'.$this::HEADS_FOLDER.'/'.$username.'.png');
-		    return true;
-		}
-		else {
-		    $canvas_save = imagecreatetruecolor($size, $size);
-		    imagecopyresampled($canvas_save, $skin_img2, 0, 0, 8, 8, $size, $size, 8, 8);
-		    imagepng($canvas_save, './'.$this::HEADS_FOLDER.'/'.$username.'.png');
-		    return imagepng($canvas);
-		}
+		$canvas_save = imagecreatetruecolor(200, 200);
+		imagecopyresampled($canvas_save, $skin_img2, 0, 0, 8, 8, 200, 200, 8, 8);
+		imagepng($canvas_save, './'.$this::HEADS_FOLDER.'/'.$username.'.png');
+		return imagepng($canvas);
 	    } else {
-		if ($only_save == 1) { return false; }
-		else {
-		    if ($this->img_exists('Steve', 'head')) {
-			$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/char.png');
-			$canvas = imagecreatetruecolor($size, $size);
-			imagecopyresampled($canvas, $skin_img, 0, 0, 8, 8, $size, $size, 8, 8);
-			return imagepng($canvas);
-		    }
+		if (!$this->img_exists('Steve', 'head')) {
+		    $skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/char.png');
+		    $canvas_save = imagecreatetruecolor(200, 200);
+		    imagecopyresampled($canvas_save, $skin_img, 0, 0, 8, 8, 200, 200, 8, 8);
+		    imagepng($canvas_save, './'.$this::HEADS_FOLDER.'/Steve.png');
 		}
+		$img = imagecreatefrompng('./'.$this::HEADS_FOLDER.'/Steve.png');
+		return imagepng($img);
 	    }
         } else {
-	    if ($only_save == 1) { return false; }
-	    else {
-		if ($this->img_exists('Steve', 'head')) {
+	    if ($this->img_exists('Steve', 'head') == false) {
 		$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/char.png');
 		$canvas = imagecreatetruecolor($size, $size);
 		imagecopyresampled($canvas, $skin_img, 0, 0, 8, 8, $size, $size, 200, 200);
 		return imagepng($canvas);
-		}
+	    } else {
+		$img = imagecreatefrompng('./'.$this::HEADS_FOLDER.'/Steve.png');
+		return imagepng($img);
 	    }
         }
     }
@@ -104,12 +97,12 @@ class Minepic {
     public function show_head($username, $size = 200) {
 	header('Content-Type: image/png');
 	if ($this->img_exists($username, 'head') == false) {
-	    return $this->get_head($username, 0, $size); 
+	    return $this->get_head($username, $size); 
 	} else {
 	    // Cache Control
 	    $ts_file = filemtime('./'.$this::HEADS_FOLDER.'/'.$username.'.png');
 	    if ( (time() - $ts_file) > $this::CACHE_TIME) {
-		return $this->get_head($username, 0, $size);
+		return $this->get_head($username, $size);
 	    } else {
 		return $this->get_cache($username, 'head', $size);
 	    }
