@@ -101,30 +101,30 @@ class Minepic {
     }
     
     // Create avatar from skin
-    public function avatar($username, $size = 200, $with_elm = 0) {
+    public function avatar($username, $size = 200) {
 	if ($this->img_exists($username, 'skin') == false) {
 	    if ($this->get_skin($username) == false) {
 		$skin_img = './'.$this::SKINS_FOLDER.'/Steve.png';
 		return $this->render_avatar($skin_img, $size);
 	    } else {
 		$skin_img = './'.$this::SKINS_FOLDER.'/'.$username.'.png';
-		return $this->render_avatar($skin_img, $size, $with_elm);
+		return $this->render_avatar($skin_img, $size);
 	    }
 	} else {
 	    $skin_img = './'.$this::SKINS_FOLDER.'/'.$username.'.png';
 	    $ts_file = filemtime($skin_img);
 	    if ( (time() - $ts_file) > $this::CACHE_TIME) {
 		$this->get_skin($username);
-		return $this->render_avatar($skin_img, $size, $with_elm);
+		return $this->render_avatar($skin_img, $size);
 	    } else {
-		return $this->render_avatar($skin_img, $size, $with_elm);
+		return $this->render_avatar($skin_img, $size);
 	    }
 	}
     }
     
-    // Rendere avatar (only head from skin image)
-    public function render_avatar($skin_img, $size = 200, $with_helm = 0) {
-	if ($size == NULL OR $size < 0) { $size = 200; }
+    // Render avatar (only head from skin image)
+    public function render_avatar_old($skin_img, $size = 200, $with_helm = 0) {
+	if ($size == NULL OR $size <= 0) { $size = 200; }
 	// generate png from url/path
 	$image = imagecreatefrompng($skin_img);
 	$avatar = imagecreatetruecolor($size, $size);
@@ -146,6 +146,41 @@ class Minepic {
 	    return imagepng($merge);
 	} else {
 	    return imagepng($avatar);
+	}
+    }
+    
+    // Render avatar (only head from skin image)
+    public function render_avatar($skin_img, $size = 200, $header = 1) {
+	if ($size == NULL OR $size <= 0) { $size = 200; }
+	// generate png from url/path
+	$image = imagecreatefrompng($skin_img);
+	$avatar = imagecreatetruecolor($size, $size);
+	imagecopyresampled($avatar, $image, 0, 0, 8, 8, $size, $size, 8, 8);
+	$helm = imagecreatetruecolor($size, $size);
+	imagealphablending($helm, false);
+	imagesavealpha($helm,true);
+	imagecopyresampled($helm, $image, 0, 0, 40, 8, $size, $size, 8, 8);
+	$no_helm = 0;
+	if ($header == 1 ) { header('Content-Type: image/png'); }
+	// Basic check for not-helm image
+	for ($x=0;$x<8;$x++) {
+	    for ($y=0;$y<8;$y++) {
+		$color=imagecolorat($helm, $x, $y);
+		$colors = imagecolorsforindex($helm, $color);
+		if ($colors['alpha'] == 0) {
+		    $no_helm++;
+		}
+	    }
+	}
+	// if all pixel haven't transparency
+	if ($no_helm < 64) {
+	    $merge = imagecreatetruecolor($size, $size); 
+	    imagecopy($merge, $avatar, 0, 0, 0, 0, $size, $size); 
+	    imagecopy($merge, $helm, 0, 0, 0, 0, $size, $size); 
+	    imagecopymerge($avatar, $merge, 0, 0, 0, 0, $size, $size, 0);
+	    return imagepng($merge); // return avatar with helm
+	} else {
+	    return imagepng($avatar); // return avatar without helm
 	}
     }
     
