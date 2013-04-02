@@ -3,8 +3,6 @@ class Minepic {
     // Constants
     const DEFAULT_NAME = 'Steve';
     const SKINS_FOLDER = 'skins';
-    const RENDERED_SKINS_FOLDER = 'rederedskins';
-    const HEADS_FOLDER = 'heads';
     const DEFAULT_HEADS_SIZE = 200;
     const CACHE_TIME = 43200;
     
@@ -73,7 +71,8 @@ class Minepic {
 	$transparent = imagecolorallocatealpha($body_canvas, 255, 255, 255, 127);
 	imagefilledrectangle($body_canvas, 0, 0, 16*$scale, 32*$scale, $transparent);
 	// Head
-	imagecopyresized($body_canvas, $image, 4*$scale, 0*$scale, 8, 8, 8*$scale, 8*$scale, 8, 8);
+	$avatar = $this->render_avatar($skin_img, 8, 0);
+	imagecopyresized($body_canvas, $avatar, 4*$scale, 0*$scale, 0, 0, 8*$scale, 8*$scale, 8, 8);
 	// Body Front
 	imagecopyresized($body_canvas, $image, 4*$scale, 8*$scale, 20, 20, 8*$scale, 12*$scale, 8, 12);
 	// Right Arm (left on img)
@@ -98,6 +97,7 @@ class Minepic {
 	imagecopyresized($body_canvas, $l_leg, 8*$scale, 20*$scale,  0,  0,  4*$scale,  12*$scale, 4,  12);
 	header('Content-Type: image/png');
 	return imagepng($body_canvas);
+	//return imagepng($avatar);
     }
     
     // Create avatar from skin
@@ -161,7 +161,6 @@ class Minepic {
 	imagesavealpha($helm,true);
 	imagecopyresampled($helm, $image, 0, 0, 40, 8, $size, $size, 8, 8);
 	$no_helm = 0;
-	if ($header == 1 ) { header('Content-Type: image/png'); }
 	// Basic check for not-helm image
 	for ($x=0;$x<8;$x++) {
 	    for ($y=0;$y<8;$y++) {
@@ -178,17 +177,26 @@ class Minepic {
 	    imagecopy($merge, $avatar, 0, 0, 0, 0, $size, $size); 
 	    imagecopy($merge, $helm, 0, 0, 0, 0, $size, $size); 
 	    imagecopymerge($avatar, $merge, 0, 0, 0, 0, $size, $size, 0);
-	    return imagepng($merge); // return avatar with helm
+	    if ($header == 1 ) { 
+		header('Content-Type: image/png'); 
+		return imagepng($merge);
+	    } else {
+		return $merge;
+	    }
+	     // return avatar with helm
 	} else {
-	    return imagepng($avatar); // return avatar without helm
+	    if ($header == 1 ) { 
+		header('Content-Type: image/png'); 
+		return imagepng($avatar); // return avatar without helm
+	    } else {
+		return $avatar;
+	    }
 	}
     }
     
     // Check if img exist
     private function img_exists($username, $filetype = 'skin') {
-	if ($filetype == 'head') { $folder = $this::HEADS_FOLDER; }
-	elseif ($filetype == 'rederedskin') { $folder = $this::RENDERED_SKINS_FOLDER; }
-	else { $folder = $this::SKINS_FOLDER; }
+	$folder = $this::SKINS_FOLDER;
         if(file_exists('./'.$folder.'/'.$username.'.png')) {
             return true;
         } else {
