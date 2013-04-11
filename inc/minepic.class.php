@@ -153,7 +153,7 @@ class Minepic {
     public function render_avatar($skin_img, $size = 200, $header = 1) {
 	if ($size == NULL OR $size <= 0) { $size = 200; }
 	// generate png from url/path
-	$image = imagecreatefrompng($skin_img);
+	@$image = imagecreatefrompng($skin_img);
 	$avatar = imagecreatetruecolor($size, $size);
 	imagecopyresampled($avatar, $image, 0, 0, 8, 8, $size, $size, 8, 8);
 	$helm = imagecreatetruecolor($size, $size);
@@ -161,14 +161,26 @@ class Minepic {
 	imagesavealpha($helm,true);
 	imagecopyresampled($helm, $image, 0, 0, 40, 8, $size, $size, 8, 8);
 	$no_helm = 0;
+	$prec_red = NULL;
+	$prec_green = NULL;
+	$prec_blue = NULL;
 	// Basic check for not-helm image
 	for ($x=0;$x<8;$x++) {
 	    for ($y=0;$y<8;$y++) {
 		$color=imagecolorat($helm, $x, $y);
 		$colors = imagecolorsforindex($helm, $color);
-		if ($colors['alpha'] == 0) {
+		if ($prec_red == NULL AND $prec_green == NULL AND $prec_blue == NULL) {
+		    $prec_red = $colors['red'];
+		    $prec_green = $colors['green'];
+		    $prec_blue = $colors['blue'];
+		}
+		if ($colors['alpha'] == 0 AND $prec_red == $colors['red'] AND 
+		$prec_green == $colors['green'] AND $prec_blue == $colors['blue']) {
 		    $no_helm++;
 		}
+		$prec_red = $colors['red'];
+		$prec_green = $colors['green'];
+		$prec_blue = $colors['blue'];
 	    }
 	}
 	// if all pixel haven't transparency
@@ -192,6 +204,24 @@ class Minepic {
 		return $avatar;
 	    }
 	}
+    }
+    public function download_skin($username) {
+	if (!$this->img_exists($username)) {
+	    $username = 'Steve';   
+	}
+	$image = imagecreatefrompng('./'.$this::SKINS_FOLDER.'/'.$username.'.png');
+	header('Content-Disposition: Attachment;filename='.$username.'.png'); 	 
+	header('Content-type: image/png');
+	return imagepng($image);
+    }
+    
+    // Get a random avatar from saved skins
+    public function random_avatar($size = 200) {
+	$all_skin = scandir($this::SKINS_FOLDER);
+	$rand = rand(2, count($all_skin));
+	$username = str_replace(".png", NULL, $all_skin[$rand]);
+	header('Content-Disposition: inline; filename="'.$username.'.png";');
+	return $this->avatar($username, $size);
     }
     
     // Check if img exist
