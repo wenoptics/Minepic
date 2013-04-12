@@ -123,68 +123,47 @@ class Minepic {
     }
     
     // Render avatar (only head from skin image)
-    public function render_avatar_old($skin_img, $size = 200, $with_helm = 0) {
-	if ($size == NULL OR $size <= 0) { $size = 200; }
-	// generate png from url/path
-	$image = imagecreatefrompng($skin_img);
-	$avatar = imagecreatetruecolor($size, $size);
-	imagecopyresampled($avatar, $image, 0, 0, 8, 8, $size, $size, 8, 8);
-	header('Content-Type: image/png');
-	if ($with_helm == 1) {
-	    $helm = imagecreatetruecolor($size, $size);
-	    imagealphablending($helm, false);
-	    imagesavealpha($helm,true);
-	    imagecopyresampled($helm, $image, 0, 0, 40, 8, $size, $size, 8, 8);
-	    // creating a cut resource 
-	    $merge = imagecreatetruecolor($size, $size); 
-	    // copying relevant section from background to the cut resource 
-	    imagecopy($merge, $avatar, 0, 0, 0, 0, $size, $size); 
-	    // copying relevant section from watermark to the cut resource 
-	    imagecopy($merge, $helm, 0, 0, 0, 0, $size, $size); 
-	    // insert cut resource to destination image 
-	    imagecopymerge($avatar, $merge, 0, 0, 0, 0, $size, $size, 0);
-	    return imagepng($merge);
-	} else {
-	    return imagepng($avatar);
-	}
-    }
-    
-    // Render avatar (only head from skin image)
     public function render_avatar($skin_img, $size = 200, $header = 1) {
 	if ($size == NULL OR $size <= 0) { $size = 200; }
 	// generate png from url/path
 	@$image = imagecreatefrompng($skin_img);
+	@imagealphablending($image, false);
+	@imagesavealpha($image, true);
 	$avatar = imagecreatetruecolor($size, $size);
-	imagecopyresampled($avatar, $image, 0, 0, 8, 8, $size, $size, 8, 8);
+	@imagecopyresampled($avatar, $image, 0, 0, 8, 8, $size, $size, 8, 8);
 	$helm = imagecreatetruecolor($size, $size);
 	imagealphablending($helm, false);
-	imagesavealpha($helm,true);
-	imagecopyresampled($helm, $image, 0, 0, 40, 8, $size, $size, 8, 8);
-	$no_helm = 0;
-	$prec_red = NULL;
-	$prec_green = NULL;
-	$prec_blue = NULL;
-	// Basic check for not-helm image
+	imagesavealpha($helm, true);
+	$transparent = imagecolorallocatealpha($helm, 255, 255, 255, 127);
+	imagefilledrectangle($helm, 0, 0, $size, $size, $transparent);
+	@imagecopyresampled($helm, $image, 0, 0, 40, 8, $size, $size, 8, 8);
+	// Check for helm image
 	for ($x=0;$x<8;$x++) {
 	    for ($y=0;$y<8;$y++) {
 		$color=imagecolorat($helm, $x, $y);
 		$colors = imagecolorsforindex($helm, $color);
-		if ($prec_red == NULL AND $prec_green == NULL AND $prec_blue == NULL) {
-		    $prec_red = $colors['red'];
-		    $prec_green = $colors['green'];
-		    $prec_blue = $colors['blue'];
-		}
-		if ($colors['alpha'] == 0 AND $prec_red == $colors['red'] AND 
-		$prec_green == $colors['green'] AND $prec_blue == $colors['blue']) {
-		    $no_helm++;
-		}
-		$prec_red = $colors['red'];
-		$prec_green = $colors['green'];
-		$prec_blue = $colors['blue'];
+		$all_red[] = $colors['red'];
+		$all_green[] = $colors['green'];
+		$all_blue[] = $colors['blue'];
+		$all_alpha[] = $colors['alpha'];
 	    }
 	}
-	// if all pixel haven't transparency
-	if ($no_helm < 64) {
+	// mean value for each color
+	$mean_red = array_sum($all_red) / 64;
+	$mean_green = array_sum($all_green) / 64;
+	$mean_blue = array_sum($all_blue) / 64;
+	$mean_alpha = array_sum($all_alpha) / 64;
+	for($i=0;$i<64;$i++) {
+	    $devs_red[] = pow($all_red[$i] - $mean_red, 2);
+	    $devs_green[] = pow($all_green[$i] - $mean_green, 2);
+	    $devs_blue[] = pow($all_blue[$i] - $mean_blue, 2);
+	}
+	// stddev for each color
+	$stddev_red = sqrt(array_sum($devs_red) / 64);
+	$stddev_green = sqrt(array_sum($devs_green) / 64);
+	$stddev_blue = sqrt(array_sum($devs_blue) / 64);
+	// if all pixel have transparency or the colors aren't the same
+	if ( ($stddev_red > 1 AND $devs_green > 1 AND $devs_blue > 1) OR ($mean_alpha == 127) ) {
 	    $merge = imagecreatetruecolor($size, $size); 
 	    imagecopy($merge, $avatar, 0, 0, 0, 0, $size, $size); 
 	    imagecopy($merge, $helm, 0, 0, 0, 0, $size, $size); 
@@ -210,6 +189,8 @@ class Minepic {
 	    $username = 'Steve';   
 	}
 	$image = imagecreatefrompng('./'.$this::SKINS_FOLDER.'/'.$username.'.png');
+	imagealphablending($image, true);
+	imagesavealpha($image, true);
 	header('Content-Disposition: Attachment;filename='.$username.'.png'); 	 
 	header('Content-type: image/png');
 	return imagepng($image);
