@@ -39,6 +39,9 @@ switch ($ex_uri[0]) {
     case 'download':
 	echo $minepic->download_skin($ex_uri[1]);
     break;
+    case 'update':
+	    echo $minepic->update($ex_uri[1]);
+	break;
     default:
 	header('Location: http://minepic.org/');
     break;

@@ -102,7 +102,7 @@ class Minepic {
     
     // Create avatar from skin
     public function avatar($username, $size = 200) {
-	if ($this->img_exists($username, 'skin') == false) {
+	if ($this->img_exists($username) == false) {
 	    if ($this->get_skin($username) == false) {
 		$skin_img = './'.$this::SKINS_FOLDER.'/Steve.png';
 		return $this->render_avatar($skin_img, $size);
@@ -205,10 +205,17 @@ class Minepic {
 	return $this->avatar($username, $size);
     }
     
+    public function update($username) {
+	if ($this->get_skin($username) == TRUE) {
+	    return $this->avatar($username);
+	} else {
+	    return $this->avatar($this::DEFAULT_NAME);
+	}
+    }
+    
     // Check if img exist
-    private function img_exists($username, $filetype = 'skin') {
-	$folder = $this::SKINS_FOLDER;
-        if(file_exists('./'.$folder.'/'.$username.'.png')) {
+    private function img_exists($username) {
+        if(file_exists('./'.$this::SKINS_FOLDER.'/'.$username.'.png')) {
             return true;
         } else {
             return false;
