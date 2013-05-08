@@ -42,6 +42,7 @@ class Minepic {
     
     // Show rendered skin
     public function show_rendered_skin($username, $size = 256) {
+	$username = str_replace('.png', NULL, $username);
 	if ($this->img_exists($username, 'skin') == false) {
 	    if ($this->get_skin($username) == false) {
 		$skin_img = './'.$this::SKINS_FOLDER.'/Steve.png';
@@ -102,6 +103,8 @@ class Minepic {
     
     // Create avatar from skin
     public function avatar($username, $size = 200) {
+	$username = preg_replace("#\?.*#", NULL, $username); // for mybb
+	$username = str_replace('.png', NULL, $username);
 	if ($this->img_exists($username) == false) {
 	    if ($this->get_skin($username) == false) {
 		$skin_img = './'.$this::SKINS_FOLDER.'/Steve.png';
@@ -163,7 +166,7 @@ class Minepic {
 	$stddev_green = sqrt(array_sum($devs_green) / 64);
 	$stddev_blue = sqrt(array_sum($devs_blue) / 64);
 	// if all pixel have transparency or the colors aren't the same
-	if ( ($stddev_red > 1 AND $devs_green > 1 AND $devs_blue > 1) OR ($mean_alpha == 127) ) {
+	if ( ($stddev_red > 0.2 AND $stddev_green > 0.2 AND $stddev_blue > 0.2) OR ($mean_alpha == 127) ) {
 	    $merge = imagecreatetruecolor($size, $size); 
 	    imagecopy($merge, $avatar, 0, 0, 0, 0, $size, $size); 
 	    imagecopy($merge, $helm, 0, 0, 0, 0, $size, $size); 
