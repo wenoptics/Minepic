@@ -1,0 +1,5 @@
+<ifmodule mod_rewrite.c>
+RewriteEngine on
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ /minepic.php/$1 [L]
+</ifmodule>
