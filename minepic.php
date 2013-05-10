@@ -2,6 +2,7 @@
 include ('./inc/minepic.class.php');
 $minepic = new Minepic();
 $uri = $_SERVER['REQUEST_URI'];
+$uri = trim($uri, "/");
 $ex_uri = explode("/", $uri);
 $dimensions = intval($ex_uri[1]);
 switch ($ex_uri[0]) {
