@@ -3,7 +3,7 @@ include ('./inc/minepic.class.php');
 $minepic = new Minepic();
 $uri = $_SERVER['REQUEST_URI'];
 $uri = trim($uri, "/");
-$ex_uri = explode("/", $uri);
+$ex_uri = explode("/", $uri, 4);
 $dimensions = intval($ex_uri[1]);
 switch ($ex_uri[0]) {
     case 'avatar':
@@ -43,7 +43,26 @@ switch ($ex_uri[0]) {
     break;
     case 'update':
 	    echo $minepic->update($ex_uri[1]);
-	break;
+    break;
+    case 'url':
+	if (preg_match('#http#i', $ex_uri[2])) {
+	    $dimensions = 200;
+	    $ex_uri = explode("/", $uri, 3);
+	    $url_img = $ex_uri[2];
+	} else {
+	    $dimensions = intval($ex_uri[2]);
+	    if ($dimensions <= 0) {
+		$dimensions = 200;
+	    }
+	    $url_img = $ex_uri[3];
+	}
+	// Skin or avatar (default)
+	if ($ex_uri[1] == 'skin') {
+	    $minepic->render_skin($url_img, $dimensions);
+	} else {
+	    $minepic->render_avatar($url_img, $dimensions, 1);
+	}
+    break;
     default:
 	header('Location: http://minepic.org/');
     break;
