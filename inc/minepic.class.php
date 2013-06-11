@@ -98,7 +98,6 @@ class Minepic {
 	imagecopyresized($body_canvas, $l_leg, 8*$scale, 20*$scale,  0,  0,  4*$scale,  12*$scale, 4,  12);
 	header('Content-Type: image/png');
 	return imagepng($body_canvas);
-	//return imagepng($avatar);
     }
     
     // Create avatar from skin
@@ -128,23 +127,27 @@ class Minepic {
     // Render avatar (only head from skin image)
     public function render_avatar($skin_img, $size = 200, $header = 1) {
 	if ($size == NULL OR $size <= 0) { $size = 200; }
+	// Default stdDev
+	$def_stddev = 0.2;
+	/*if ($size < 64) { $def_stddev = 0.1; }
+	else { $def_stddev = 0.2; }*/
 	// generate png from url/path
 	@$image = imagecreatefrompng($skin_img);
 	@imagealphablending($image, false);
 	@imagesavealpha($image, true);
 	$avatar = imagecreatetruecolor($size, $size);
 	@imagecopyresampled($avatar, $image, 0, 0, 8, 8, $size, $size, 8, 8);
-	$helm = imagecreatetruecolor($size, $size);
-	imagealphablending($helm, false);
-	imagesavealpha($helm, true);
-	$transparent = imagecolorallocatealpha($helm, 255, 255, 255, 127);
-	imagefilledrectangle($helm, 0, 0, $size, $size, $transparent);
-	@imagecopyresampled($helm, $image, 0, 0, 40, 8, $size, $size, 8, 8);
 	// Check for helm image
+	$helm_check = imagecreatetruecolor($size, $size);
+	imagealphablending($helm_check, false);
+	imagesavealpha($helm_check, true);
+	$transparent = imagecolorallocatealpha($helm_check, 255, 255, 255, 127);
+	imagefilledrectangle($helm_check, 0, 0, 8, 8, $transparent);
+	@imagecopyresampled($helm_check, $image, 0, 0, 40, 8, 8, 8, 8, 8);
 	for ($x=0;$x<8;$x++) {
 	    for ($y=0;$y<8;$y++) {
-		$color=imagecolorat($helm, $x, $y);
-		$colors = imagecolorsforindex($helm, $color);
+		$color=imagecolorat($helm_check, $x, $y);
+		$colors = imagecolorsforindex($helm_check, $color);
 		$all_red[] = $colors['red'];
 		$all_green[] = $colors['green'];
 		$all_blue[] = $colors['blue'];
@@ -166,7 +169,16 @@ class Minepic {
 	$stddev_green = sqrt(array_sum($devs_green) / 64);
 	$stddev_blue = sqrt(array_sum($devs_blue) / 64);
 	// if all pixel have transparency or the colors aren't the same
-	if ( ($stddev_red > 0.2 AND $stddev_green > 0.2 AND $stddev_blue > 0.2) OR ($mean_alpha == 127) ) {
+	if ( ( ($stddev_red > $def_stddev AND $stddev_green > $def_stddev) OR 
+		($stddev_red > $def_stddev AND $stddev_blue > $def_stddev) OR 
+		($stddev_green > $def_stddev AND $stddev_blue > $def_stddev) ) OR 
+		($mean_alpha == 127) ) {
+	    $helm = imagecreatetruecolor($size, $size);
+	    imagealphablending($helm, false);
+	    imagesavealpha($helm, true);
+	    $transparent = imagecolorallocatealpha($helm, 255, 255, 255, 127);
+	    imagefilledrectangle($helm, 0, 0, $size, $size, $transparent);
+	    @imagecopyresampled($helm, $image, 0, 0, 40, 8, $size, $size, 8, 8);
 	    $merge = imagecreatetruecolor($size, $size); 
 	    imagecopy($merge, $avatar, 0, 0, 0, 0, $size, $size); 
 	    imagecopy($merge, $helm, 0, 0, 0, 0, $size, $size); 
