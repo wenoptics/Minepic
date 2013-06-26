@@ -30,7 +30,7 @@ class Minepic {
 		$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/'.$username.'.png');
 		imagealphablending($skin_img, false);
 		imagesavealpha($skin_img, true);
-		imagepng($skin_img, './'.$this::SKINS_FOLDER.'/'.$username.'.png');
+		imagepng($skin_img, './'.self::SKINS_FOLDER.'/'.$username.'.png');
 		return true;
             } else {
                 return false;
@@ -45,16 +45,16 @@ class Minepic {
 	$username = str_replace('.png', NULL, $username);
 	if ($this->img_exists($username, 'skin') == false) {
 	    if ($this->get_skin($username) == false) {
-		$skin_img = './'.$this::SKINS_FOLDER.'/Steve.png';
+		$skin_img = './'.self::SKINS_FOLDER.'/Steve.png';
 		return $this->render_skin($skin_img, $size);
 	    } else {
-		$skin_img = './'.$this::SKINS_FOLDER.'/'.$username.'.png';
+		$skin_img = './'.self::SKINS_FOLDER.'/'.$username.'.png';
 		return $this->render_skin($skin_img, $size);
 	    }
 	} else {
-	    $skin_img = './'.$this::SKINS_FOLDER.'/'.$username.'.png';
+	    $skin_img = './'.self::SKINS_FOLDER.'/'.$username.'.png';
 	    $ts_file = filemtime($skin_img);
-	    if ( (time() - $ts_file) > $this::CACHE_TIME) {
+	    if ( (time() - $ts_file) > self::CACHE_TIME) {
 		$this->get_skin($username);
 		return $this->render_skin($skin_img, $size);
 	    } else {
@@ -106,16 +106,16 @@ class Minepic {
 	$username = str_replace('.png', NULL, $username);
 	if ($this->img_exists($username) == false) {
 	    if ($this->get_skin($username) == false) {
-		$skin_img = './'.$this::SKINS_FOLDER.'/Steve.png';
+		$skin_img = './'.self::SKINS_FOLDER.'/Steve.png';
 		return $this->render_avatar($skin_img, $size);
 	    } else {
-		$skin_img = './'.$this::SKINS_FOLDER.'/'.$username.'.png';
+		$skin_img = './'.self::SKINS_FOLDER.'/'.$username.'.png';
 		return $this->render_avatar($skin_img, $size);
 	    }
 	} else {
-	    $skin_img = './'.$this::SKINS_FOLDER.'/'.$username.'.png';
+	    $skin_img = './'.self::SKINS_FOLDER.'/'.$username.'.png';
 	    $ts_file = filemtime($skin_img);
-	    if ( (time() - $ts_file) > $this::CACHE_TIME) {
+	    if ( (time() - $ts_file) > self::CACHE_TIME) {
 		$this->get_skin($username);
 		return $this->render_avatar($skin_img, $size);
 	    } else {
@@ -203,7 +203,7 @@ class Minepic {
 	if (!$this->img_exists($username)) {
 	    $username = 'Steve';   
 	}
-	$image = imagecreatefrompng('./'.$this::SKINS_FOLDER.'/'.$username.'.png');
+	$image = imagecreatefrompng('./'.self::SKINS_FOLDER.'/'.$username.'.png');
 	imagealphablending($image, true);
 	imagesavealpha($image, true);
 	header('Content-Disposition: Attachment;filename='.$username.'.png'); 	 
@@ -213,7 +213,7 @@ class Minepic {
     
     // Get a random avatar from saved skins
     public function random_avatar($size = 200) {
-	$all_skin = scandir($this::SKINS_FOLDER);
+	$all_skin = scandir(self::SKINS_FOLDER);
 	$rand = rand(2, count($all_skin));
 	$username = str_replace(".png", NULL, $all_skin[$rand]);
 	header('Content-Disposition: inline; filename="'.$username.'.png";');
@@ -224,13 +224,13 @@ class Minepic {
 	if ($this->get_skin($username) == TRUE) {
 	    return $this->avatar($username);
 	} else {
-	    return $this->avatar($this::DEFAULT_NAME);
+	    return $this->avatar(self::DEFAULT_NAME);
 	}
     }
     
     // Check if img exist
     private function img_exists($username) {
-        if(file_exists('./'.$this::SKINS_FOLDER.'/'.$username.'.png')) {
+        if(file_exists('./'.self::SKINS_FOLDER.'/'.$username.'.png')) {
             return true;
         } else {
             return false;
