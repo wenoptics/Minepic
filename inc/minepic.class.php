@@ -24,7 +24,7 @@ class Minepic {
     
     // Get full skin
     public function get_skin($username) {
-        if ($this->check_premium($username) == true) {
+        if ($this->check_premium($username) == 'true') {
             @$headers = get_headers("http://s3.amazonaws.com/MinecraftSkins/".$username.".png");
             if (@$headers[7] == 'Content-Type: image/png' || @$headers[7] == 'Content-Type: application/octet-stream') {
 		$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/'.$username.'.png');
@@ -36,7 +36,12 @@ class Minepic {
                 return false;
             }
         } else {
-            return false;
+	    // if the requested username is not premium, create a skin image like 'Steve' (to speed up requests)
+	    $skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/char.png');
+	    imagealphablending($skin_img, false);
+	    imagesavealpha($skin_img, true);
+	    imagepng($skin_img, './'.self::SKINS_FOLDER.'/'.$username.'.png');
+            return true;
         }
     }
     
