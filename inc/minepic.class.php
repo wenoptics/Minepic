@@ -33,16 +33,24 @@ class Minepic {
 		imagepng($skin_img, './'.self::SKINS_FOLDER.'/'.$username.'.png');
 		return true;
             } else {
-                return false;
+		$this->get_steve($username);
+                return true;
             }
         } else {
 	    // if the requested username is not premium, create a skin image like 'Steve' (to speed up requests)
-	    $skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/char.png');
-	    imagealphablending($skin_img, false);
-	    imagesavealpha($skin_img, true);
-	    imagepng($skin_img, './'.self::SKINS_FOLDER.'/'.$username.'.png');
+	    $this->get_steve($username);
             return true;
         }
+    }
+    
+    // Get default (Steve) skin
+    public function get_steve($username = NULL) {
+	if ($username == NULL) $username = 'Steve';
+	$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/char.png');
+	imagealphablending($skin_img, false);
+	imagesavealpha($skin_img, true);
+	imagepng($skin_img, './'.self::SKINS_FOLDER.'/'.$username.'.png');
+	return true;
     }
     
     // Show rendered skin
