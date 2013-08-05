@@ -1,10 +1,11 @@
 <?php
 class Minepic {
     // Constants
-    const DEFAULT_NAME = 'Steve';
-    const SKINS_FOLDER = 'skins';
-    const DEFAULT_HEADS_SIZE = 200;
-    const CACHE_TIME = 43200;
+    const DEFAULT_NAME = 'Steve'; // Default skin name
+    const SKINS_FOLDER = 'skins'; // Skins folder name
+    const DEFAULT_HEADS_SIZE = 200; // Default avatar size in pixels if not specified
+    const CACHE_TIME = 43200; // Image caching time (in seconds)
+    const DEFAULT_STDDEV = 0.2; // Default standard deviation value for helm checks
     
     // Generic function for cURL requests
     private function curl_request($address) {
@@ -140,10 +141,6 @@ class Minepic {
     // Render avatar (only head from skin image)
     public function render_avatar($skin_img, $size = 200, $header = 1) {
 	if ($size == NULL OR $size <= 0) { $size = 200; }
-	// Default stdDev
-	$def_stddev = 0.2;
-	/*if ($size < 64) { $def_stddev = 0.1; }
-	else { $def_stddev = 0.2; }*/
 	// generate png from url/path
 	@$image = imagecreatefrompng($skin_img);
 	@imagealphablending($image, false);
@@ -182,9 +179,9 @@ class Minepic {
 	$stddev_green = sqrt(array_sum($devs_green) / 64);
 	$stddev_blue = sqrt(array_sum($devs_blue) / 64);
 	// if all pixel have transparency or the colors aren't the same
-	if ( ( ($stddev_red > $def_stddev AND $stddev_green > $def_stddev) OR 
-		($stddev_red > $def_stddev AND $stddev_blue > $def_stddev) OR 
-		($stddev_green > $def_stddev AND $stddev_blue > $def_stddev) ) OR 
+	if ( ( ($stddev_red > self::DEFAULT_STDDEV AND $stddev_green > self::DEFAULT_STDDEV) OR 
+		($stddev_red > self::DEFAULT_STDDEV AND $stddev_blue > self::DEFAULT_STDDEV) OR 
+		($stddev_green > self::DEFAULT_STDDEV AND $stddev_blue > self::DEFAULT_STDDEV) ) OR 
 		($mean_alpha == 127) ) {
 	    $helm = imagecreatetruecolor($size, $size);
 	    imagealphablending($helm, false);
