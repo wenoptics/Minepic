@@ -1,11 +1,14 @@
 <?php
 class Minepic {
     // Constants
-    const DEFAULT_NAME = 'Steve'; // Default skin name
-    const SKINS_FOLDER = 'skins'; // Skins folder name
+    const DEFAULT_NAME = 'Steve';   // Default skin name
+    const SKINS_FOLDER = 'skins';   // Skins folder name
     const DEFAULT_HEADS_SIZE = 200; // Default avatar size in pixels if not specified
-    const CACHE_TIME = 43200; // Image caching time (in seconds)
-    const DEFAULT_STDDEV = 0.2; // Default standard deviation value for helm checks
+    const CACHE_TIME = 43200;       // Image caching time (in seconds)
+    const DEFAULT_STDDEV = 0.2;     // Default standard deviation value for helm checks
+    //
+    // Variables
+    var $premium;
     
     // Generic function for cURL requests
     private function curl_request($address) {
@@ -20,12 +23,16 @@ class Minepic {
     
     // Check if username is premium
     public function check_premium($username) {
-        return $this->curl_request('https://www.minecraft.net/haspaid.jsp?user='.$username);
+        if ($this->curl_request('https://www.minecraft.net/haspaid.jsp?user='.$username)  == 'true') {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
     }
     
     // Get full skin
     public function get_skin($username) {
-        if ($this->check_premium($username) == 'true') {
+        if ($this->check_premium($username) == TRUE) {
             @$headers = get_headers("http://s3.amazonaws.com/MinecraftSkins/".$username.".png");
             if (@$headers[7] == 'Content-Type: image/png' || @$headers[7] == 'Content-Type: application/octet-stream') {
 		$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/'.$username.'.png');
@@ -55,61 +62,78 @@ class Minepic {
     }
     
     // Show rendered skin
-    public function show_rendered_skin($username, $size = 256) {
+    public function show_rendered_skin($username, $size = 256, $type = 'F') {
 	$username = str_replace('.png', NULL, $username);
 	if ($this->img_exists($username, 'skin') == false) {
 	    if ($this->get_skin($username) == false) {
 		$skin_img = './'.self::SKINS_FOLDER.'/Steve.png';
-		return $this->render_skin($skin_img, $size);
+		return $this->render_skin($skin_img, $size, $type);
 	    } else {
 		$skin_img = './'.self::SKINS_FOLDER.'/'.$username.'.png';
-		return $this->render_skin($skin_img, $size);
+		return $this->render_skin($skin_img, $size, $type);
 	    }
 	} else {
 	    $skin_img = './'.self::SKINS_FOLDER.'/'.$username.'.png';
 	    $ts_file = filemtime($skin_img);
 	    if ( (time() - $ts_file) > self::CACHE_TIME) {
 		$this->get_skin($username);
-		return $this->render_skin($skin_img, $size);
+		return $this->render_skin($skin_img, $size, $type);
 	    } else {
-		return $this->render_skin($skin_img, $size);
+		return $this->render_skin($skin_img, $size, $type);
 	    }
 	}
     }
     
-    public function render_skin($skin_img, $skin_height = 256) {
+    public function render_skin($skin_img, $skin_height = 256, $type = 'F') {
+        if ($skin_height == NULL) $skin_height = 256;
 	$image = imagecreatefrompng($skin_img);
 	$scale = $skin_height / 32;
 	$body_canvas = imagecreatetruecolor(16*$scale, 32*$scale);
 	imagealphablending($body_canvas, false);
-	imagesavealpha($body_canvas,true);
+	imagesavealpha($body_canvas, true);
 	$transparent = imagecolorallocatealpha($body_canvas, 255, 255, 255, 127);
 	imagefilledrectangle($body_canvas, 0, 0, 16*$scale, 32*$scale, $transparent);
-	// Head
-	$avatar = $this->render_avatar($skin_img, 8, 0);
-	imagecopyresized($body_canvas, $avatar, 4*$scale, 0*$scale, 0, 0, 8*$scale, 8*$scale, 8, 8);
-	// Body Front
-	imagecopyresized($body_canvas, $image, 4*$scale, 8*$scale, 20, 20, 8*$scale, 12*$scale, 8, 12);
-	// Right Arm (left on img)
-	$r_arm = imagecreatetruecolor(4, 12);
-	imagecopy($r_arm, $image, 0, 0, 44, 20, 4, 12);
-	imagecopyresized($body_canvas, $r_arm, 0*$scale, 8*$scale, 0, 0, 4*$scale, 12*$scale, 4, 12);
-	// Left Arm (right on img) by flipping right arm
-	$l_arm = imagecreatetruecolor(4, 12);
-	for ($x = 0; $x < 4; $x++) {
-	    imagecopy($l_arm, $r_arm, $x, 0, 4 - $x - 1, 0, 1, 12);
-	}
-	imagecopyresized($body_canvas, $l_arm, 12*$scale,  8*$scale,  0,  0,  4*$scale,  12*$scale, 4,  12);
-	// Right leg (left on img)
-	$r_leg = imagecreatetruecolor(4, 20);
-	imagecopy($r_leg, $image, 0, 0, 4, 20, 4, 12);
-	imagecopyresized($body_canvas, $r_leg, 4*$scale, 20*$scale, 0, 0, 4*$scale, 12*$scale, 4, 12);
-	// Left leg (right on img)
-	$l_leg = imagecreatetruecolor(4, 20);
-	for ($x = 0; $x < 4; $x++) {
-	    imagecopy($l_leg, $r_leg, $x, 0, 4 - $x - 1, 0, 1, 20);
-	}
-	imagecopyresized($body_canvas, $l_leg, 8*$scale, 20*$scale,  0,  0,  4*$scale,  12*$scale, 4,  12);
+        if ($type == 'F') {
+            // Head
+            $avatar = $this->render_avatar($skin_img, 8, 0);
+            imagecopyresized($body_canvas, $avatar, 4*$scale, 0*$scale, 0, 0, 8*$scale, 8*$scale, 8, 8);
+            // Body Front
+            imagecopyresized($body_canvas, $image, 4*$scale, 8*$scale, 20, 20, 8*$scale, 12*$scale, 8, 12);
+            // Right Arm (left on img)
+            $r_arm = imagecreatetruecolor(4, 12);
+            imagecopy($r_arm, $image, 0, 0, 44, 20, 4, 12);
+            imagecopyresized($body_canvas, $r_arm, 0*$scale, 8*$scale, 0, 0, 4*$scale, 12*$scale, 4, 12);
+            // Right leg (left on img)
+            $r_leg = imagecreatetruecolor(4, 20);
+            imagecopy($r_leg, $image, 0, 0, 4, 20, 4, 12);
+            imagecopyresized($body_canvas, $r_leg, 4*$scale, 20*$scale, 0, 0, 4*$scale, 12*$scale, 4, 12);
+        } elseif ($type == 'B') {
+            // Head
+            $avatar = $this->render_avatar($skin_img, 8, 0, 'B');
+            imagecopyresized($body_canvas, $avatar, 4*$scale, 0*$scale, 0, 0, 8*$scale, 8*$scale, 8, 8);
+            // Body Back
+            imagecopyresized($body_canvas, $image, 4*$scale, 8*$scale, 32, 20, 8*$scale, 12*$scale, 8, 12);
+            // Right Arm Back (left on img)
+            $r_arm = imagecreatetruecolor(4, 12);
+            imagecopy($r_arm, $image, 0, 0, 52, 20, 4, 12);
+            imagecopyresized($body_canvas, $r_arm, 0*$scale, 8*$scale, 0, 0, 4*$scale, 12*$scale, 4, 12);
+            // Right leg Back (left on img)
+            $r_leg = imagecreatetruecolor(4, 20);
+            imagecopy($r_leg, $image, 0, 0, 12, 20, 4, 12);
+            imagecopyresized($body_canvas, $r_leg, 4*$scale, 20*$scale, 0, 0, 4*$scale, 12*$scale, 4, 12);
+        }
+        // Left Arm (right flipped)
+        $l_arm = imagecreatetruecolor(4, 12);
+        for ($x = 0; $x < 4; $x++) {
+            imagecopy($l_arm, $r_arm, $x, 0, 4 - $x - 1, 0, 1, 12);
+        }
+        imagecopyresized($body_canvas, $l_arm, 12*$scale,  8*$scale,  0,  0,  4*$scale,  12*$scale, 4,  12);
+        // Left leg (right flipped)
+        $l_leg = imagecreatetruecolor(4, 20);
+        for ($x = 0; $x < 4; $x++) {
+            imagecopy($l_leg, $r_leg, $x, 0, 4 - $x - 1, 0, 1, 20);
+        }
+        imagecopyresized($body_canvas, $l_leg, 8*$scale, 20*$scale,  0,  0,  4*$scale,  12*$scale, 4,  12);
 	header('Content-Type: image/png');
 	return imagepng($body_canvas);
     }
@@ -139,21 +163,33 @@ class Minepic {
     }
     
     // Render avatar (only head from skin image)
-    public function render_avatar($skin_img, $size = 200, $header = 1) {
+    public function render_avatar($skin_img, $size = 200, $header = 1, $type = 'F') {
 	if ($size == NULL OR $size <= 0) { $size = 200; }
 	// generate png from url/path
 	@$image = imagecreatefrompng($skin_img);
 	@imagealphablending($image, false);
 	@imagesavealpha($image, true);
+        // Head
 	$avatar = imagecreatetruecolor($size, $size);
-	@imagecopyresampled($avatar, $image, 0, 0, 8, 8, $size, $size, 8, 8);
-	// Check for helm image
-	$helm_check = imagecreatetruecolor($size, $size);
+        // Helm
+        $helm_check = imagecreatetruecolor($size, $size);
 	imagealphablending($helm_check, false);
 	imagesavealpha($helm_check, true);
-	$transparent = imagecolorallocatealpha($helm_check, 255, 255, 255, 127);
-	imagefilledrectangle($helm_check, 0, 0, 8, 8, $transparent);
-	@imagecopyresampled($helm_check, $image, 0, 0, 40, 8, 8, 8, 8, 8);
+        $transparent = imagecolorallocatealpha($helm_check, 255, 255, 255, 127);
+        imagefilledrectangle($helm_check, 0, 0, 8, 8, $transparent);
+        switch ($type) {
+            case 'F':
+                // Avatar front
+                @imagecopyresampled($avatar, $image, 0, 0, 8, 8, $size, $size, 8, 8);
+                @imagecopyresampled($helm_check, $image, 0, 0, 40, 8, 8, 8, 8, 8);
+                break;
+            case 'B':
+                // Avatar back
+                @imagecopyresampled($avatar, $image, 0, 0, 24, 8, $size, $size, 8, 8);
+                @imagecopyresampled($helm_check, $image, 0, 0, 56, 8, 8, 8, 8, 8);
+                break;
+        }
+	// Check for helm image
 	for ($x=0;$x<8;$x++) {
 	    for ($y=0;$y<8;$y++) {
 		$color=imagecolorat($helm_check, $x, $y);
@@ -188,7 +224,7 @@ class Minepic {
 	    imagesavealpha($helm, true);
 	    $transparent = imagecolorallocatealpha($helm, 255, 255, 255, 127);
 	    imagefilledrectangle($helm, 0, 0, $size, $size, $transparent);
-	    @imagecopyresampled($helm, $image, 0, 0, 40, 8, $size, $size, 8, 8);
+	    imagecopyresampled($helm, $image, 0, 0, 40, 8, $size, $size, 8, 8);
 	    $merge = imagecreatetruecolor($size, $size); 
 	    imagecopy($merge, $avatar, 0, 0, 0, 0, $size, $size); 
 	    imagecopy($merge, $helm, 0, 0, 0, 0, $size, $size); 

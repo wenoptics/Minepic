@@ -38,6 +38,17 @@ switch ($ex_uri[0]) {
 	    }
 	}
     break;
+    case 'skin-back':
+	if ($dimensions != 0 AND @$ex_uri[2] != '') {
+	    echo $minepic->show_rendered_skin($ex_uri[2], $dimensions, 'B');
+	} else {
+	    if (is_string($ex_uri[1]) AND $ex_uri[1] != '') {
+		echo $minepic->show_rendered_skin($ex_uri[1], NULL, 'B');
+	    } else {
+		echo $minepic->show_rendered_skin('Steve', NULL, 'B');
+	    }
+	}
+    break;
     case 'download':
 	echo $minepic->download_skin($ex_uri[1]);
     break;
