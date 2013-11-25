@@ -1,14 +1,17 @@
 <?php
 class Minepic {
     // Constants
-    const DEFAULT_NAME = 'Steve';   // Default skin name
-    const SKINS_FOLDER = 'skins';   // Skins folder name
-    const DEFAULT_HEADS_SIZE = 200; // Default avatar size in pixels if not specified
-    const CACHE_TIME = 43200;       // Image caching time (in seconds)
-    const DEFAULT_STDDEV = 0.2;     // Default standard deviation value for helm checks
-    //
+    const DEFAULT_NAME          = 'Steve';  // Default skin name
+    const SKINS_FOLDER          = 'skins';  // Skins folder name
+    const DEFAULT_HEADS_SIZE    = 200;      // Default avatar size in pixels if not specified
+    const CACHE_TIME            = 43200;    // Image caching time on disk (in seconds)
+    const BROWSER_CACHE         = 14400;    // Image caching time on browser
+    const DEFAULT_STDDEV        = 0.2;      // Default standard deviation value for helm checks
+    const PROFILE_URL           = 'https://api.mojang.com/profiles/page/1';
+    
     // Variables
-    var $premium;
+    public $username, $idmc;
+    private $curlresp, $curlinfo;
     
     // Generic function for cURL requests
     private function curl_request($address) {
@@ -21,6 +24,27 @@ class Minepic {
         curl_close($request);
     }
     
+    //  Execute a POST request with JSON data
+    private function curl_json($url, $array) {
+        $request = curl_init();
+        curl_setopt($request, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($request, CURLOPT_HTTPHEADER , array('Content-Type: application/json'));
+        curl_setopt($request, CURLOPT_POST, TRUE);
+        curl_setopt($request, CURLOPT_POSTFIELDS, json_encode($array));
+        curl_setopt($request, CURLOPT_URL, $url);
+        $response = curl_exec($request);
+        $this->curlinfo = curl_getinfo($request);
+        curl_close($request);
+        $rjson = json_decode($response);
+        if ($this->curlinfo['http_code'] == '200') {
+            $this->curlresp = $rjson;
+            return TRUE;
+        } else {
+            $this->curlresp = NULL;
+            return FALSE;
+        }
+    }
+    
     // Check if username is premium
     public function check_premium($username) {
         if ($this->curl_request('https://www.minecraft.net/haspaid.jsp?user='.$username)  == 'true') {
@@ -30,18 +54,46 @@ class Minepic {
         }
     }
     
+    // Check if is a valid username
+    private function check_username($username) {
+        if (preg_match('#[^a-zA-Z0-9_]+#', $username)) {
+            return FALSE;
+        } else {
+            return TRUE;
+        }
+    }
+    
+    public function get_user_info($username) {
+        if ($this->check_username($username) === TRUE) {
+            $p_array['agent'] = 'Minecraft';
+            $p_array['name'] = $username;
+            if ($this->curl_json(self::PROFILE_URL, $p_array) === TRUE) {
+                if (isset($this->curlresp->profiles[0]->name)) {
+                    $this->username = $this->curlresp->profiles[0]->name;
+                    $this->idmc = $this->curlresp->profiles[0]->id;
+                    return TRUE;
+                }
+                else return FALSE;
+            } else {
+                return FALSE;
+            }
+        } else {
+            return FALSE;
+        }
+    }
+    
     // Get full skin
     public function get_skin($username) {
-        if ($this->check_premium($username) == TRUE) {
-            @$headers = get_headers("http://s3.amazonaws.com/MinecraftSkins/".$username.".png");
+        if ($this->get_user_info($username) === TRUE) {
+            @$headers = get_headers("http://s3.amazonaws.com/MinecraftSkins/".$this->username.".png");
             if (@$headers[7] == 'Content-Type: image/png' || @$headers[7] == 'Content-Type: application/octet-stream') {
-		$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/'.$username.'.png');
+		$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/'.$this->username.'.png');
 		imagealphablending($skin_img, false);
 		imagesavealpha($skin_img, true);
-		imagepng($skin_img, './'.self::SKINS_FOLDER.'/'.$username.'.png');
+		imagepng($skin_img, './'.self::SKINS_FOLDER.'/'.$this->username.'.png');
 		return true;
             } else {
-		$this->get_steve($username);
+		$this->get_steve($this->username);
                 return true;
             }
         } else {
@@ -63,6 +115,7 @@ class Minepic {
     
     // Show rendered skin
     public function show_rendered_skin($username, $size = 256, $type = 'F') {
+        $username = preg_replace("#\?.*#", NULL, $username); // for mybb
 	$username = str_replace('.png', NULL, $username);
 	if ($this->img_exists($username, 'skin') == false) {
 	    if ($this->get_skin($username) == false) {
@@ -134,6 +187,7 @@ class Minepic {
             imagecopy($l_leg, $r_leg, $x, 0, 4 - $x - 1, 0, 1, 20);
         }
         imagecopyresized($body_canvas, $l_leg, 8*$scale, 20*$scale,  0,  0,  4*$scale,  12*$scale, 4,  12);
+        header('Cache-Control: max-age='.self::BROWSER_CACHE);
 	header('Content-Type: image/png');
 	return imagepng($body_canvas);
     }
@@ -147,7 +201,7 @@ class Minepic {
 		$skin_img = './'.self::SKINS_FOLDER.'/Steve.png';
 		return $this->render_avatar($skin_img, $size);
 	    } else {
-		$skin_img = './'.self::SKINS_FOLDER.'/'.$username.'.png';
+		$skin_img = './'.self::SKINS_FOLDER.'/'.$this->username.'.png';
 		return $this->render_avatar($skin_img, $size);
 	    }
 	} else {
@@ -229,7 +283,8 @@ class Minepic {
 	    imagecopy($merge, $avatar, 0, 0, 0, 0, $size, $size); 
 	    imagecopy($merge, $helm, 0, 0, 0, 0, $size, $size); 
 	    imagecopymerge($avatar, $merge, 0, 0, 0, 0, $size, $size, 0);
-	    if ($header == 1 ) { 
+	    if ($header == 1 ) {
+                header('Cache-Control: max-age='.self::BROWSER_CACHE);
 		header('Content-Type: image/png'); 
 		return imagepng($merge);
 	    } else {
@@ -237,7 +292,8 @@ class Minepic {
 	    }
 	     // return avatar with helm
 	} else {
-	    if ($header == 1 ) { 
+	    if ($header == 1 ) {
+                header('Cache-Control: max-age='.self::BROWSER_CACHE);
 		header('Content-Type: image/png'); 
 		return imagepng($avatar); // return avatar without helm
 	    } else {
@@ -268,7 +324,7 @@ class Minepic {
     
     public function update($username) {
 	if ($this->get_skin($username) == TRUE) {
-	    return $this->avatar($username);
+	    return $this->avatar($this->username);
 	} else {
 	    return $this->avatar(self::DEFAULT_NAME);
 	}
@@ -283,4 +339,3 @@ class Minepic {
         }
     }
 }
-?>
