@@ -90,10 +90,10 @@ class Minepic {
 		$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/'.$this->username.'.png');
 		imagealphablending($skin_img, false);
 		imagesavealpha($skin_img, true);
-		imagepng($skin_img, './'.self::SKINS_FOLDER.'/'.$this->username.'.png');
+		imagepng($skin_img, './'.self::SKINS_FOLDER.'/'.$username.'.png');
 		return true;
             } else {
-		$this->get_steve($this->username);
+		$this->get_steve($username);
                 return true;
             }
         } else {
