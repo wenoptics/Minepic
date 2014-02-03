@@ -201,7 +201,7 @@ class Minepic {
 		$skin_img = './'.self::SKINS_FOLDER.'/Steve.png';
 		return $this->render_avatar($skin_img, $size);
 	    } else {
-		$skin_img = './'.self::SKINS_FOLDER.'/'.$this->username.'.png';
+		$skin_img = './'.self::SKINS_FOLDER.'/'.$username.'.png';
 		return $this->render_avatar($skin_img, $size);
 	    }
 	} else {
