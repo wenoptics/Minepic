@@ -3,9 +3,9 @@ class Minepic {
     // Constants
     const DEFAULT_NAME          = 'Steve';  // Default skin name
     const SKINS_FOLDER          = 'skins';  // Skins folder name
-    const DEFAULT_HEADS_SIZE    = 200;      // Default avatar size in pixels if not specified
-    const CACHE_TIME            = 43200;    // Image caching time on disk (in seconds)
-    const BROWSER_CACHE         = 14400;    // Image caching time on browser
+    const DEFAULT_HEADS_SIZE    = 256;      // Default avatar size in pixels if not specified
+    const DEFAULT_SKINS_SIZE    = 256;      // Default avatar size in pixels if not specified
+    const CACHE_TIME            = 43200;    // Image caching time (in seconds)
     const DEFAULT_STDDEV        = 0.2;      // Default standard deviation value for helm checks
     const PROFILE_URL           = 'https://api.mojang.com/profiles/page/1';
     
@@ -105,7 +105,7 @@ class Minepic {
     
     // Get default (Steve) skin
     public function get_steve($username = NULL) {
-	if ($username == NULL) $username = 'Steve';
+	if ($username == NULL) $username = self::DEFAULT_NAME;
 	$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/char.png');
 	imagealphablending($skin_img, false);
 	imagesavealpha($skin_img, true);
@@ -114,12 +114,12 @@ class Minepic {
     }
     
     // Show rendered skin
-    public function show_rendered_skin($username, $size = 256, $type = 'F') {
+    public function show_rendered_skin($username, $size = self::DEFAULT_SKINS_SIZE, $type = 'F') {
         $username = preg_replace("#\?.*#", NULL, $username); // for mybb
 	$username = str_replace('.png', NULL, $username);
 	if ($this->img_exists($username, 'skin') == false) {
 	    if ($this->get_skin($username) == false) {
-		$skin_img = './'.self::SKINS_FOLDER.'/Steve.png';
+		$skin_img = './'.self::SKINS_FOLDER.'/'.self::DEFAULT_NAME.'.png';
 		return $this->render_skin($skin_img, $size, $type);
 	    } else {
 		$skin_img = './'.self::SKINS_FOLDER.'/'.$username.'.png';
@@ -138,7 +138,8 @@ class Minepic {
     }
     
     public function render_skin($skin_img, $skin_height = 256, $type = 'F') {
-        if ($skin_height == NULL) $skin_height = 256;
+        $skin_height = intval($skin_height);
+        if ($skin_height == 0 OR $skin_height < 0) { $skin_height = self::DEFAULT_SKINS_SIZE; }
 	$image = imagecreatefrompng($skin_img);
 	$scale = $skin_height / 32;
 	$body_canvas = imagecreatetruecolor(16*$scale, 32*$scale);
@@ -187,18 +188,19 @@ class Minepic {
             imagecopy($l_leg, $r_leg, $x, 0, 4 - $x - 1, 0, 1, 20);
         }
         imagecopyresized($body_canvas, $l_leg, 8*$scale, 20*$scale,  0,  0,  4*$scale,  12*$scale, 4,  12);
-        header('Cache-Control: max-age='.self::BROWSER_CACHE);
+        header('Cache-Control: public, max-age='.self::CACHE_TIME);
+        header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time() + self::CACHE_TIME));
 	header('Content-Type: image/png');
-	return imagepng($body_canvas);
+	return imagepng($body_canvas, NULL, 7, PNG_NO_FILTER);
     }
     
     // Create avatar from skin
-    public function avatar($username, $size = 200) {
+    public function avatar($username, $size = self::DEFAULT_HEADS_SIZE) {
 	$username = preg_replace("#\?.*#", NULL, $username); // for mybb
 	$username = str_replace('.png', NULL, $username);
 	if ($this->img_exists($username) == false) {
 	    if ($this->get_skin($username) == false) {
-		$skin_img = './'.self::SKINS_FOLDER.'/Steve.png';
+		$skin_img = './'.self::SKINS_FOLDER.'/'.self::DEFAULT_NAME.'.png';
 		return $this->render_avatar($skin_img, $size);
 	    } else {
 		$skin_img = './'.self::SKINS_FOLDER.'/'.$username.'.png';
@@ -217,8 +219,8 @@ class Minepic {
     }
     
     // Render avatar (only head from skin image)
-    public function render_avatar($skin_img, $size = 200, $header = 1, $type = 'F') {
-	if ($size == NULL OR $size <= 0) { $size = 200; }
+    public function render_avatar($skin_img, $size = self::DEFAULT_HEADS_SIZE, $header = 1, $type = 'F') {
+	if ($size == NULL OR $size <= 0) { $size = self::DEFAULT_HEADS_SIZE; }
 	// generate png from url/path
 	@$image = imagecreatefrompng($skin_img);
 	@imagealphablending($image, false);
@@ -284,18 +286,20 @@ class Minepic {
 	    imagecopy($merge, $helm, 0, 0, 0, 0, $size, $size); 
 	    imagecopymerge($avatar, $merge, 0, 0, 0, 0, $size, $size, 0);
 	    if ($header == 1 ) {
-                header('Cache-Control: max-age='.self::BROWSER_CACHE);
+                header('Cache-Control: public, max-age='.self::CACHE_TIME);
+                header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time() + self::CACHE_TIME));
 		header('Content-Type: image/png'); 
-		return imagepng($merge);
+		return imagepng($merge, NULL, 7, PNG_NO_FILTER);
 	    } else {
 		return $merge;
 	    }
 	     // return avatar with helm
 	} else {
 	    if ($header == 1 ) {
-                header('Cache-Control: max-age='.self::BROWSER_CACHE);
+                header('Cache-Control: public, max-age='.self::CACHE_TIME);
+                header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time() + self::CACHE_TIME));
 		header('Content-Type: image/png'); 
-		return imagepng($avatar); // return avatar without helm
+		return imagepng($avatar, NULL, 7, PNG_NO_FILTER); // return avatar without helm
 	    } else {
 		return $avatar;
 	    }
@@ -303,7 +307,7 @@ class Minepic {
     }
     public function download_skin($username) {
 	if (!$this->img_exists($username)) {
-	    $username = 'Steve';   
+	    $username = self::DEFAULT_NAME;
 	}
 	$image = imagecreatefrompng('./'.self::SKINS_FOLDER.'/'.$username.'.png');
 	imagealphablending($image, true);
@@ -314,7 +318,7 @@ class Minepic {
     }
     
     // Get a random avatar from saved skins
-    public function random_avatar($size = 200) {
+    public function random_avatar($size = self::DEFAULT_HEADS_SIZE) {
 	$all_skin = scandir(self::SKINS_FOLDER);
 	$rand = rand(2, count($all_skin));
 	$username = str_replace(".png", NULL, $all_skin[$rand]);
