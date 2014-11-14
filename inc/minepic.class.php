@@ -87,7 +87,7 @@ class Minepic {
         if ($this->get_user_info($username) === TRUE) {
             @$headers = get_headers("http://s3.amazonaws.com/MinecraftSkins/".$this->username.".png");
             if (@$headers[7] == 'Content-Type: image/png' || @$headers[7] == 'Content-Type: application/octet-stream') {
-		$skin_img = imagecreatefrompng('https://s3.amazonaws.com/MinecraftSkins/'.$this->username.'.png');
+		$skin_img = imagecreatefrompng('http://skins.minecraft.net/MinecraftSkins/'.$this->username.'.png');
 		imagealphablending($skin_img, false);
 		imagesavealpha($skin_img, true);
 		imagepng($skin_img, './'.self::SKINS_FOLDER.'/'.$username.'.png');
